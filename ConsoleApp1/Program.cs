@@ -20,19 +20,13 @@ namespace ConsoleApp1
         {
             connModel connection=new connModel();
 
-            try
-            {
-                Console.Write("Ingrese la dirección IP del servidor: ");
-                string srvip = Console.ReadLine();
-                connection = new connModel(srvip, "postgres", "Ipte123+++", "5432", "");
 
-            }
-            catch (Exception ex) { 
-                Console.WriteLine(ex.Message);
-            }
+            Console.Write("Ingrese la dirección IP del servidor: ");
+            string srvip = Console.ReadLine();                                          //Definición de la ip del servidor
+            connection = new connModel(srvip, "postgres", "Ipte123+++", "5432", ""); 
             List<Carril> carriles = new List<Carril>();
-            carriles = InitializeApplication(connection);
-            Carril carril;
+            carriles = InitializeApplication(connection);                               //Extracción de los datos de los carriles
+            Carril carril;     //Objeto de tipo carril para operaciones
 
 
             int opt=99;
@@ -41,7 +35,7 @@ namespace ConsoleApp1
                 try
                 {
                     Console.WriteLine("____________________________________________________________________");
-                    Console.WriteLine("Herramienta de diagnóstico\n\n1-Revisar última transacción en carril\n2-Revisar tiempo entre transacciones\n3-Comprobar conexión\n8-Limpiar consola\n0-Terminar");
+                    Console.WriteLine("Herramienta de diagnóstico\n\n1 Revisar última transacción en carril\n2 Revisar tiempo entre transacciones\n3 Comprobar conexión\n8 Limpiar consola\n0 Terminar");
                     Console.Write("Seleccione una opción: ");
                     opt = int.Parse(Console.ReadLine());
                     Console.WriteLine("\n__________________________________________________________________");
@@ -85,46 +79,41 @@ namespace ConsoleApp1
         public static List<Carril> InitArray(NpgsqlConnection npgsqlConnection)
         {
             string sqlStr = "select cfg_key,cfg_value,cve_caseta from tab_equipo_cuerpo tec \r\ninner join tab_parametros tp on tp.ide_equipo_cuerpo = tec.ide_equipo_cuerpo\r\ninner join tab_cuerpos tc on tc.ide_cuerpo  = tec.ide_cuerpo\r\nwhere cfg_key='PCCarril'";
-            var cmd = new NpgsqlCommand(sqlStr, npgsqlConnection);
-            var carriles = new List<Carril>();
+            var cmd = new NpgsqlCommand(sqlStr, npgsqlConnection); //Selección de los campos de nombre del carril, la ip de las tablas de parámetros y cuerpos
+            var carriles = new List<Carril>();         //Uso de una lista para registrar los carriles
             using (
                 var reader = cmd.ExecuteReader())
             {
-                while (reader.Read())
+                while (reader.Read())  
                 {
                     string nom= reader.GetString(2);
                     string ip=reader.GetString(1);
 
-                    Carril carril = new Carril(nom,ip);
+                    Carril carril = new Carril(nom,ip);             //Lectura de carriles y asignación a la lista
                     carriles.Add(carril);
                 }
             }
 
             foreach(var carril in carriles)
             {
-                Console.WriteLine($"Nombre: {carril.getNombre()}, IP: {carril.getIP()}");
+                Console.WriteLine($"Nombre: {carril.getNombre()}, IP: {carril.getIP()}"); //Visualización de resultados en pantalla
             }
-            return carriles;
-        }
-
-        public static void CheckTransact()
-        {
-
+            return carriles;  //Retorno de la lista para su almacenamiento en memoria posterior
         }
 
         public static List<Carril> InitializeApplication(connModel conn)
         {
-            Console.WriteLine("Conectando con Cerberus");
+            Console.WriteLine("Conectando con Cerberus");              //Probar conexión con Cerberus
             conn.setDb("cerberus");
-            Connect(PostSQLcon,conn);
-            Console.WriteLine("Extrayendo datos de carril");
-            List<Carril> carriles = InitArray(PostSQLcon);
-            Console.WriteLine("Conectando con Styx");
+            Connect(PostSQLcon,conn);                       
+            Console.WriteLine("Extrayendo datos de carril");           //Uso de Cerberus para traer la información de carriles
+            List<Carril> carriles = InitArray(PostSQLcon);             //Obtención de la información de carriles
+            Console.WriteLine("Conectando con Styx");                  //Probar conexión con Styx
             conn.setDb("styx");
             Connect(PostSQLcon, conn);
-            return carriles;
+            return carriles;                                           //Devolver la lista de carriles para su almacenamiento en memoria
         }
-        public static Carril PcSelect(List<Carril> carriles)
+        public static Carril PcSelect(List<Carril> carriles)           //Uso de la lista de carriles para generación del menú de selección
         {
             try
             {
@@ -145,7 +134,7 @@ namespace ConsoleApp1
        
         }
 
-        public static void Connect(NpgsqlConnection connection, connModel model)
+        public static void Connect(NpgsqlConnection connection, connModel model)        //Conector
         {
             try
             {
@@ -166,10 +155,10 @@ namespace ConsoleApp1
             }
         }
 
-        public static string GetFileName(string ip)
+        public static string GetFileName(string ip)                     //Para acceder al nombre del archivo .paq actual
         {
-            string dir = @"//"+ip+"/CAPUFE/data/paquet";
-            Regex format = new Regex(@"data0\d{6}\.paq");
+            string dir = @"//"+ip+"/CAPUFE/data/paquet";                //Acceso remoto al archivo
+            Regex format = new Regex(@"data0\d{6}\.paq");               //Validación del nombre
             string ret="";
             try
             {
@@ -179,40 +168,39 @@ namespace ConsoleApp1
                 List<string> lines = new List<string>();
                 foreach (FileInfo fileInfo in fileInfos)
                 {
-                    if (format.IsMatch(fileInfo.Name))
+                    if (format.IsMatch(fileInfo.Name))                  //Comparación de los nombres de archivo
                     {
                         lines.Add(fileInfo.Name);
-                        ret=fileInfo.FullName;
-                        Console.Write(ret);
+                        ret=fileInfo.FullName;                          //Obtención de la ruta completa
                     }       
                 }
             }catch (Exception ex)
             {
-                Console.WriteLine("Error"+ex.Message+"\nRevise los permisos de acceso a la base de datos de Cerberus");
+                Console.WriteLine("Error"+ex.Message+"\nRevise los permisos de acceso");
             }
             return ret;
         }
 
-        public static string ExtractRow(Carril target)
+        public static string ExtractRow(Carril target)                  //Búsqueda de las líneas de cobro de tags
         {
             string ret = GetFileName(target.getIP());
             Console.WriteLine(ret);
             Regex format = new Regex("402");
             Regex tag = new Regex("IAV");      
-            string[] lines = File.ReadAllLines(ret);
+            string[] lines = File.ReadAllLines(ret);                    //Lectura del archivo completo
 
            for(int i = lines.Length - 1; i >= 0;  i--)
             {
                 string line = lines[i];
-                if(format.IsMatch(line) && tag.IsMatch(line))
+                if(format.IsMatch(line) && tag.IsMatch(line))           //Validación de última transacción
                 {
-                    return line;
+                    return line;            
                 }
             }             
             return null;
         }
 
-        public static void setFormat(string str)
+        public static void setFormat(string str)                        //Para dar formato a la salida de los registros de transacciones
         {
             if (str == null)
             {
@@ -263,7 +251,7 @@ namespace ConsoleApp1
             }             
         }
 
-        public static string ValidateDate(string str)
+        public static string ValidateDate(string str)                           //Formato de fecha
         {
             string dt = "";
             for(int i=0;i < str.Length;i++)
@@ -280,7 +268,7 @@ namespace ConsoleApp1
             return dt;
         }
 
-        public static string ValidateTime(string str)
+        public static string ValidateTime(string str)                           //Formato de hora
         {
             string hr = "";
             for(int i=0; i < str.Length; i++)
@@ -297,11 +285,11 @@ namespace ConsoleApp1
             return hr;
         }
 
-       public static bool CalcDelay(NpgsqlConnection connection)
+       public static bool CalcDelay(NpgsqlConnection connection)            //Cáculo del retraso entre transacciones 
         {
             try
             {
-                string sqlStr = "select min(sys_update), max(sys_update), (max(sys_update)-min(sys_update)) from tab_tag_cobrado ttc where sys_enabled=true";
+                string sqlStr = "select min(sys_update), max(sys_update) from tab_tag_cobrado ttc where sys_enabled=true";   //Obtención de tags cobrados y no enviados
                 var cmd = new NpgsqlCommand(sqlStr, connection);
                 TimeSpan Del=new TimeSpan();
                 using(var reader = cmd.ExecuteReader())
@@ -310,15 +298,15 @@ namespace ConsoleApp1
                     {
                         DateTime minDate=reader.GetDateTime(0);
                         DateTime maxDate = reader.GetDateTime(1);
-                        Del = maxDate-minDate;
+                        Del = maxDate-minDate;                             //Diferencia del tiempo de transacción
                         
-                        Console.WriteLine("Primer tag:"+minDate.ToString());
-                        Console.WriteLine("Último tag:" + maxDate.ToString());
-                        Console.WriteLine("\nRetraso:" + Del.Days+" Dias, "+Del.Hours+" Horas, "+Del.Minutes+" Minutos, "+Del.Seconds+" Segundos, "+Del.Milliseconds+" Milisegundos");
+                        Console.WriteLine("Primer tag: "+minDate.ToString());
+                        Console.WriteLine("Último tag: " + maxDate.ToString());
+                        Console.WriteLine("\nRetraso: " + Del.Days+" días, "+Del.Hours+" horas, "+Del.Minutes+" minutos, "+Del.Seconds+" segundos, "+Del.Milliseconds+" milisegundos");
                     }
                 }
 
-                if(Del.TotalSeconds > 30)
+                if(Del.TotalSeconds > 30)                               //tiempo de tolerancia 30s
                 {
                     Console.WriteLine("\nRetraso muy alto, los tags no están pasando");
                 }
@@ -326,19 +314,6 @@ namespace ConsoleApp1
                 {
                     Console.WriteLine("Correcto");
                 }
-                //float del = cmd.ExecuteNonQuery();
-                /*Console.WriteLine(del);
-                if (del > 30)
-                {
-                    Console.WriteLine("Anomalía detectada");
-                    return true;
-                }
-                else
-                {
-                    Console.WriteLine(del);
-                    Console.WriteLine("Todo correcto");
-                    return false;
-                }*/
             }
             catch(Exception ex)
             { 
@@ -348,7 +323,7 @@ namespace ConsoleApp1
         }
 
 
-        public static bool PingCheck(string ip)
+        public static bool PingCheck(string ip)               //Verificación de conexión
         {
             Console.WriteLine("Revisando conexión con " + ip);
             Ping ping = new Ping();
