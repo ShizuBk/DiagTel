@@ -200,18 +200,15 @@ namespace ConsoleApp1
             Regex format = new Regex("402");
             Regex tag = new Regex("IAV");      
             string[] lines = File.ReadAllLines(ret);
-                for (int i = lines.Length -1; i>= 0; i--)
+
+           for(int i = lines.Length - 1; i >= 0;  i--)
+            {
+                string line = lines[i];
+                if(format.IsMatch(line) && tag.IsMatch(line))
                 {
-                    string line = lines[i];
-                    if (format.IsMatch(line) && tag.IsMatch(line))
-                    {
-                        return line;
-                    }
-                    else
-                    {
-                        return null;
-                    }
+                    return line;
                 }
+            }             
             return null;
         }
 
